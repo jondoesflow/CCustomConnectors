@@ -1,0 +1,90 @@
+using System;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
+
+public class Script : ScriptBase
+{
+    public override async Task<HttpResponseMessage> ExecuteAsync()
+    {
+        HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
+
+        // Read the request content
+        string requestBody = await this.Context.Request.Content.ReadAsStringAsync();
+        JObject json = JObject.Parse(requestBody);
+        int number = (int)json["num"];
+        //int number = (int)json["num"];
+        
+
+        // Convert the number to words
+        string numberInWords = NumberToWords(number);
+
+        // Create the JSON response
+        response.Content = CreateJsonContent($"{{\"message\": \"{numberInWords}\"}}");
+        return response;
+    }
+
+    private static string[] units = { "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine" };
+    private static string[] teens = { "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen" };
+    private static string[] tens = { "", "Ten", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety" };
+    private static string[] thousands = { "", "Thousand", "Million", "Billion" };
+
+private static string NumberToWords(int number)
+{
+    if (number == 0)
+        return "Zero";
+
+    if (number < 0)
+        return "Minus " + NumberToWords(Math.Abs(number));
+
+    string words = "";
+
+    int[] numArray = new int[4];
+    int first = 0;
+
+    while (number > 0)
+    {
+        numArray[first++] = number % 1000;
+        number /= 1000;
+    }
+
+    for (int i = first - 1; i >= 0; i--)
+    {
+        if (numArray[i] == 0)
+            continue;
+
+        string segment = "";
+
+        int u = numArray[i] % 10;
+        int t = (numArray[i] / 10) % 10;
+        int h = (numArray[i] / 100) % 10;
+
+        if (h > 0)
+            segment += units[h] + " Hundred ";
+
+        if (t > 0)
+        {
+            if (t == 1)
+            {
+                segment += teens[u] + " ";
+            }
+            else
+            {
+                segment += tens[t] + " ";
+                if (u > 0)
+                    segment += units[u] + " ";
+            }
+        }
+        else if (u > 0)
+        {
+            segment += units[u] + " ";
+        }
+
+        if (segment != "")
+            words += segment + thousands[i] + " ";
+    }
+
+    return words.Trim();
+}
+}
